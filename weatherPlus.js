@@ -1,15 +1,16 @@
 let weatherData;
 
 function setup() {
-  createCanvas(800, 400);
+  let canvas = createCanvas(1200, 400).id('weatherCanvas');
+  canvas.style('border', '1px solid #000');
+  textAlign(CENTER);
+  textSize(18);
   
-  // Create search input
-  let searchInput = createInput('Copenhagen'); // Default city set to Copenhagen
+  let searchInput = createInput('Copenhagen');
   searchInput.position(20, 20);
   searchInput.attribute('placeholder', 'Enter city name');
-  searchInput.attribute('id', 'search-input'); // Add an id for easier access
+  searchInput.attribute('id', 'search-input');
 
-  // Create search button
   let searchButton = createButton('Search');
   searchButton.position(180, 20);
   searchButton.mousePressed(() => {
@@ -17,7 +18,6 @@ function setup() {
     fetchWeatherData(cityName);
   });
   
-  // Fetch weather data for the default city
   fetchWeatherData('Copenhagen');
 }
 
@@ -29,7 +29,6 @@ async function fetchWeatherData(city) {
     }
     weatherData = await response.json();
 
-    // Convert forecast dates to Date objects
     weatherData.forecast.forEach(forecast => {
       forecast.date = new Date(forecast.date);
     });
@@ -41,80 +40,55 @@ async function fetchWeatherData(city) {
   }
 }
 
-
 function displayWeather() {
-  // Adjust canvas size to fit the entire forecast
-  let canvasWidth = 1200; // Adjust as needed
-  let canvasHeight = 400; // Adjust as needed
-  resizeCanvas(canvasWidth, canvasHeight);
-
-  background('skyblue'); // Set background color to sky blue
-
+  background('skyblue');
+  
   if (weatherData) {
-    // Set text color to white
     fill(255);
-    textSize(16);
-    textAlign(CENTER);
-
-    // Display current weather
-    text(`City: ${weatherData.city}`, width / 2, 50);
+    text(`${weatherData.city}`, width / 2, 50);
     text(`Current Temperature: ${weatherData.currentTemp} °C`, width / 2, 85);
-    // Display weather condition icon for current condition
+    textStyle(BOLD);
     getWeatherIcon(weatherData.currentCondition, icon => {
       if (icon) {
-        image(icon, width / 2 - 25, 120, 50, 50); // Position the icon above the condition text
+        image(icon, width / 2 - 25, 85, 50, 50);
       }
     });
-    text(`${weatherData.currentCondition}`, width / 2, 190); // Position the condition text below the icon
+    text(`${weatherData.currentCondition}`, width / 2, 150);
 
-    // Calculate the maximum width needed for each column based on text length
     let maxColumnWidth = 0;
     for (let i = 0; i < 5; i++) {
       let forecast = weatherData.forecast[i];
-      let dateWidth = textWidth(forecast.date.toLocaleDateString()); // Date width
+      let dateWidth = textWidth(forecast.date.toLocaleDateString());
       let tempWidth = textWidth(`Avg Temp: ${forecast.avgTemp} °C`);
-      let columnWidth = max(dateWidth, tempWidth) + 20; // Add padding
+      let columnWidth = max(dateWidth, tempWidth) + 2;
       maxColumnWidth = max(maxColumnWidth, columnWidth);
     }
 
-    // Display 5-day forecast
-    let xOffset = (width - maxColumnWidth * 5) / 2;
-    let yOffset = 200;
+    let xOffset = (width - maxColumnWidth * 5) / 2 + maxColumnWidth;
+    let yOffset = 170;
     let dayHeight = 150;
 
-    stroke(255); // Set stroke color to white for grid borders
+    stroke(255);
     for (let i = 0; i < 5; i++) {
       let forecast = weatherData.forecast[i];
       let x = xOffset + i * maxColumnWidth;
       let y = yOffset;
 
-      // Draw forecast box with white fill
       fill('skyblue');
       rect(x, y, maxColumnWidth, dayHeight);
 
-      // Display date
-      textAlign(CENTER);
-      fill(255); // Reset text color to white
-      text(forecast.date.toLocaleDateString(), x + maxColumnWidth / 2, y + 40);
-
-      // Display average temperature
-      textAlign(CENTER);
-      text(`Avg Temp: ${forecast.avgTemp} °C`, x + maxColumnWidth / 2, y + 80);
-
-      // Display weather condition icon for forecast
+      fill(255);
+      text(forecast.date.toLocaleDateString(), x + maxColumnWidth / 2, y + 25);
+      text(`Avg Temp: ${forecast.avgTemp} °C`, x + maxColumnWidth / 2, y + 55);
       getWeatherIcon(forecast.condition, icon => {
         if (icon) {
-          image(icon, x + maxColumnWidth / 2 - 25, y + 120, 50, 50);
+          image(icon, x + maxColumnWidth / 2 - 25, y + 60, 50, 50);
         }
       });
-
-      // Display condition text below icon
-      textAlign(CENTER);
-      text(`${forecast.condition}`, x + maxColumnWidth / 2, y + 190);
+      text(`${forecast.condition}`, x + maxColumnWidth / 2, y + 130);
     }
   } else {
-    // Display loading message
-    fill(255); // Set text color to white
+    fill(255);
     text('Loading weather data...', width / 2, 100);
   }
 }
@@ -133,7 +107,5 @@ function getWeatherIcon(condition, callback) {
       return loadImage('https://openweathermap.org/img/wn/11d.png', img => callback(img));
     case 'mist':
       return loadImage('https://openweathermap.org/img/wn/50d.png', img => callback(img));
-    default:
-      return null; // No icon found
   }
 }
