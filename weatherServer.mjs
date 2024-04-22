@@ -1,8 +1,12 @@
 // Import the express module
 import express from 'express';
+import path from 'path'; // Import the path module
 
 // Create an instance of the express application
 const app = express();
+
+// Serve static files from the 'public' directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Enable CORS middleware
 app.use((req, res, next) => {
@@ -50,6 +54,7 @@ app.get('/weather/:city', async (req, res) => {
     // Send the weather data as JSON response
     res.status(200).json(weatherData);
   } catch (error) {
+    // Handle errors
     console.error('Error fetching weather data:', error);
     res.status(500).send('Internal server error');
   }
