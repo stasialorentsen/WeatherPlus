@@ -1,41 +1,24 @@
 let weatherData;
-let cities = {
-  'Amsterdam': 'Amsterdam',
-  'Athens': 'Athens',
-  'Berlin': 'Berlin',
-  'Brussels': 'Brussels',
-  'Budapest': 'Budapest',
-  'Copenhagen': 'Copenhagen',
-  'Dublin': 'Dublin',
-  'Helsinki': 'Helsinki',
-  'Lisbon': 'Lisbon',
-  'London': 'London',
-  'Madrid': 'Madrid',
-  'Oslo': 'Oslo',
-  'Paris': 'Paris',
-  'Prague': 'Prague',
-  'Rome': 'Rome',
-  'Stockholm': 'Stockholm',
-  'Vienna': 'Vienna',
-  'Warsaw': 'Warsaw'
-};
 
 function setup() {
   createCanvas(800, 400);
   
-  // Create city dropdown menu
-  let citySelect = createSelect();
-  citySelect.position(20, 20);
-  for (let cityName in cities) {
-    citySelect.option(cityName);
-  }
-  citySelect.changed(() => {
-    let selectedCity = citySelect.value();
-    fetchWeatherData(selectedCity);
+  // Create search input
+  let searchInput = createInput('Copenhagen'); // Default city set to Copenhagen
+  searchInput.position(20, 20);
+  searchInput.attribute('placeholder', 'Enter city name');
+  searchInput.attribute('id', 'search-input'); // Add an id for easier access
+
+  // Create search button
+  let searchButton = createButton('Search');
+  searchButton.position(180, 20);
+  searchButton.mousePressed(() => {
+    let cityName = searchInput.value();
+    fetchWeatherData(cityName);
   });
   
   // Fetch weather data for the default city
-  fetchWeatherData('Amsterdam');
+  fetchWeatherData('Copenhagen');
 }
 
 async function fetchWeatherData(city) {
@@ -45,6 +28,12 @@ async function fetchWeatherData(city) {
       throw new Error('Failed to fetch weather data');
     }
     weatherData = await response.json();
+
+    // Convert forecast dates to Date objects
+    weatherData.forecast.forEach(forecast => {
+      forecast.date = new Date(forecast.date);
+    });
+
     displayWeather();
   } catch (error) {
     console.error('Error fetching weather data:', error);
@@ -52,31 +41,39 @@ async function fetchWeatherData(city) {
   }
 }
 
+
 function displayWeather() {
   // Adjust canvas size to fit the entire forecast
   let canvasWidth = 1200; // Adjust as needed
   let canvasHeight = 400; // Adjust as needed
   resizeCanvas(canvasWidth, canvasHeight);
 
-  background(220);
-  textSize(16);
-  textAlign(CENTER);
-  fill(0); // Set text color to black
+  background('skyblue'); // Set background color to sky blue
 
   if (weatherData) {
+    // Set text color to white
+    fill(255);
+    textSize(16);
+    textAlign(CENTER);
+
     // Display current weather
     text(`City: ${weatherData.city}`, width / 2, 50);
-    text(`Current Temperature: ${weatherData.currentTemp} °C`, width / 2, 100);
-    text(`Current Condition: ${weatherData.currentCondition}`, width / 2, 150);
+    text(`Current Temperature: ${weatherData.currentTemp} °C`, width / 2, 85);
+    // Display weather condition icon for current condition
+    getWeatherIcon(weatherData.currentCondition, icon => {
+      if (icon) {
+        image(icon, width / 2 - 25, 120, 50, 50); // Position the icon above the condition text
+      }
+    });
+    text(`${weatherData.currentCondition}`, width / 2, 190); // Position the condition text below the icon
 
     // Calculate the maximum width needed for each column based on text length
     let maxColumnWidth = 0;
     for (let i = 0; i < 5; i++) {
       let forecast = weatherData.forecast[i];
-      let dateWidth = textWidth(forecast.date);
+      let dateWidth = textWidth(forecast.date.toLocaleDateString()); // Date width
       let tempWidth = textWidth(`Avg Temp: ${forecast.avgTemp} °C`);
-      let conditionWidth = textWidth(`Condition: ${forecast.condition}`);
-      let columnWidth = max(dateWidth, tempWidth, conditionWidth) + 20; // Add padding
+      let columnWidth = max(dateWidth, tempWidth) + 20; // Add padding
       maxColumnWidth = max(maxColumnWidth, columnWidth);
     }
 
@@ -84,31 +81,59 @@ function displayWeather() {
     let xOffset = (width - maxColumnWidth * 5) / 2;
     let yOffset = 200;
     let dayHeight = 150;
+
+    stroke(255); // Set stroke color to white for grid borders
     for (let i = 0; i < 5; i++) {
       let forecast = weatherData.forecast[i];
       let x = xOffset + i * maxColumnWidth;
       let y = yOffset;
 
-      // Draw forecast box
-      stroke(0);
-      fill(255);
+      // Draw forecast box with white fill
+      fill('skyblue');
       rect(x, y, maxColumnWidth, dayHeight);
 
       // Display date
       textAlign(CENTER);
-      fill(0); // Reset text color to black
-      text(forecast.date, x + maxColumnWidth / 2, y + 30);
+      fill(255); // Reset text color to white
+      text(forecast.date.toLocaleDateString(), x + maxColumnWidth / 2, y + 40);
 
       // Display average temperature
       textAlign(CENTER);
-      text(`Avg Temp: ${forecast.avgTemp} °C`, x + maxColumnWidth / 2, y + 70);
+      text(`Avg Temp: ${forecast.avgTemp} °C`, x + maxColumnWidth / 2, y + 80);
 
-      // Display rain/cloud condition
+      // Display weather condition icon for forecast
+      getWeatherIcon(forecast.condition, icon => {
+        if (icon) {
+          image(icon, x + maxColumnWidth / 2 - 25, y + 120, 50, 50);
+        }
+      });
+
+      // Display condition text below icon
       textAlign(CENTER);
-      text(`Condition: ${forecast.condition}`, x + maxColumnWidth / 2, y + 110);
+      text(`${forecast.condition}`, x + maxColumnWidth / 2, y + 190);
     }
   } else {
-    fill(0); // Set text color to black
+    // Display loading message
+    fill(255); // Set text color to white
     text('Loading weather data...', width / 2, 100);
+  }
+}
+
+function getWeatherIcon(condition, callback) {
+  switch (condition.toLowerCase()) {
+    case 'clear':
+      return loadImage('https://openweathermap.org/img/wn/01d.png', img => callback(img));
+    case 'clouds':
+      return loadImage('https://openweathermap.org/img/wn/03d.png', img => callback(img));
+    case 'rain':
+      return loadImage('https://openweathermap.org/img/wn/10d.png', img => callback(img));
+    case 'snow':
+      return loadImage('https://openweathermap.org/img/wn/13d.png', img => callback(img));
+    case 'thunderstorm':
+      return loadImage('https://openweathermap.org/img/wn/11d.png', img => callback(img));
+    case 'mist':
+      return loadImage('https://openweathermap.org/img/wn/50d.png', img => callback(img));
+    default:
+      return null; // No icon found
   }
 }
