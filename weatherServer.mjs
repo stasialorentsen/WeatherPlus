@@ -1,6 +1,8 @@
-// Import the express module
-import express from 'express';
+import express from 'express'; // Import the express module
 import path from 'path'; // Import the path module
+
+// Define __dirname using import.meta.url and URL constructor
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 // Create an instance of the express application
 const app = express();
